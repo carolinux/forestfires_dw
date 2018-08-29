@@ -1,6 +1,7 @@
 from osgeo import gdal
 import psycopg2
 from psycopg2.extras import execute_values
+import pandas as pd
 
 import struct
 import sys
@@ -30,10 +31,7 @@ stepX = geotransform[1]
 stepY = geotransform[5]
 num_pixels = band.YSize * band.XSize
 
-conn_string = "dbname='fires' user='carolinux'"
-conn = psycopg2.connect(conn_string)
-cur = conn.cursor()
-
+tuples = []
 
 i = 0
 for y in range(band.YSize):
@@ -64,16 +62,28 @@ for y in range(band.YSize):
             INSERT INTO forest_boxes (box, year, tree_cover)
             VALUES (ST_MakeEnvelope({}, {}, {}, {}, 4326), {}, {});'''.\
                     format(min_lon, min_lat, max_lon, max_lat, year, value)
-            cur.execute(insert_sql)
-            tup = (('ST_MakeEnvelope({}, {}, {}, {}, 4326)',), year, value)
+            #cur.execute(insert_sql)
+            ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
+                    X, Y,
+                    X + stepX, Y,
+                    X + stepX, Y + stepY,
+                    X, Y + stepY,
+                    X, Y)
+            tup = (ewkt, year, value)
+            tuples.append(tup)
             if i%100000 == 0:
                 print('{} out of {} ({} %)'.format(i, num_pixels, 100.0 * i/num_pixels))
-                conn.commit()
 
         X += stepX
     X = topleftX
     Y += stepY
-
+df = pd.DataFrame.from_records(tuples)
+df.to_csv("/tmp/foo.txt", sep="|", index=False, header=False)
+f = open('/tmp/foo.txt')
+conn_string = "dbname='fires' user='carolinux'"
+conn = psycopg2.connect(conn_string)
+cur = conn.cursor()
+cur.copy_from(f, 'forest_boxes', columns=('box', 'year', 'tree_cover'), sep="|")
 conn.commit()
 cur.close()
 conn.close()
