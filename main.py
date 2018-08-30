@@ -1,7 +1,7 @@
 import sys
 import os
 
-from . import process_file
+import process_file
 
 
 if __name__ == "__main__":

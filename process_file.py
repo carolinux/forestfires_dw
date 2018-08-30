@@ -34,30 +34,15 @@ def process(hdf_file):
     num_pixels = band.YSize * band.XSize
     tuples = []
     i = 0
+    inserted = 0
     for y in range(band.YSize):
 
-        scanline = band.ReadRaster(0,
-                                   y,
-                                   band.XSize,
-                                   1,
-                                   band.XSize,
-                                   1,
-                                   band.DataType)
-
+        scanline = band.ReadRaster(0, y, band.XSize, 1, band.XSize, 1, band.DataType)
         values = struct.unpack(band_types_map[band_type] * band.XSize, scanline)
-
         for value in values:
             i += 1
 
             if (value >= 30 and value != 200):
-                lon_topleft = X
-                lat_topleft = Y
-                lon_bottomright = X + stepX
-                lat_bottomright = Y + stepY
-                min_lon = min(lon_topleft, lon_bottomright)
-                min_lat = min(lat_topleft, lat_bottomright)
-                max_lon = max(lon_topleft, lon_bottomright)
-                max_lat = max(lat_topleft, lat_bottomright)
                 insert_sql = " INSERT INTO forest_boxes (box, year, tree_cover) VALUES %s"
                 ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
                     X, Y,
@@ -68,10 +53,11 @@ def process(hdf_file):
                 tup = (ewkt, year, value)
                 tuples.append(tup)
                 if i % 100000 == 0:
-                    if i% 1000000:
+                    if i % 1000000:
                         print('{} out of {} ({} %)'.format(i, num_pixels, 100.0 * i / num_pixels))
                     execute_values(cur, insert_sql, tuples)
                     conn.commit()
+                    inserted += len(tuples)
                     tuples = []
 
             X += stepX
@@ -79,7 +65,8 @@ def process(hdf_file):
         Y += stepY
     if len(tuples) > 0:  # still have some rows to insert
         execute_values(cur, insert_sql, tuples)
+        inserted += len(tuples)
         conn.commit()
     cur.close()
     conn.close()
-
+    print("Found {} forest boxes".format(inserted))
