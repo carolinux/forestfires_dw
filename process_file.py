@@ -7,6 +7,10 @@ import struct
 import sys
 import subprocess
 
+conn_string = "dbname='fires' user='carolinux'"
+conn = psycopg2.connect(conn_string)
+cur = conn.cursor()
+
 hdf_file = sys.argv[1]
 dest_tif_file = hdf_file + '.tif'
 
@@ -58,11 +62,7 @@ for y in range(band.YSize):
             min_lat = min(lat_topleft, lat_bottomright)
             max_lon = max(lon_topleft, lon_bottomright)
             max_lat = max(lat_topleft, lat_bottomright)
-            insert_sql = '''
-            INSERT INTO forest_boxes (box, year, tree_cover)
-            VALUES (ST_MakeEnvelope({}, {}, {}, {}, 4326), {}, {});'''.\
-                    format(min_lon, min_lat, max_lon, max_lat, year, value)
-            #cur.execute(insert_sql)
+            insert_sql = " INSERT INTO forest_boxes (box, year, tree_cover) VALUES %s"
             ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
                     X, Y,
                     X + stepX, Y,
@@ -73,17 +73,16 @@ for y in range(band.YSize):
             tuples.append(tup)
             if i%100000 == 0:
                 print('{} out of {} ({} %)'.format(i, num_pixels, 100.0 * i/num_pixels))
+                execute_values(cur, insert_sql, tuples)
+                conn.commit()
+                tuples = []
 
         X += stepX
     X = topleftX
     Y += stepY
-df = pd.DataFrame.from_records(tuples)
-df.to_csv("/tmp/foo.txt", sep="|", index=False, header=False)
-f = open('/tmp/foo.txt')
-conn_string = "dbname='fires' user='carolinux'"
-conn = psycopg2.connect(conn_string)
-cur = conn.cursor()
-cur.copy_from(f, 'forest_boxes', columns=('box', 'year', 'tree_cover'), sep="|")
-conn.commit()
+
+if len(tuples) > 0: # still have some rows to insert
+    execute_values(cur, insert_sql, tuples)
+    conn.commit()
 cur.close()
 conn.close()
