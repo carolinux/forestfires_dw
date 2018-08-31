@@ -8,7 +8,7 @@ import sys
 import subprocess
 
 
-def process(hdf_file):
+def process(hdf_file, target_table_name):
     conn_string = "dbname='fires' user='carolinux'"
     conn = psycopg2.connect(conn_string)
     cur = conn.cursor()
@@ -43,8 +43,9 @@ def process(hdf_file):
             i += 1
 
             if (value >= 30 and value != 200):
-                insert_sql = " INSERT INTO forest_boxes (box, year, tree_cover) VALUES %s"
+                insert_sql = " INSERT INTO {} (box, year, tree_cover) VALUES %s"
                 ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
+                    target_table_name,
                     X, Y,
                     X + stepX, Y,
                     X + stepX, Y + stepY,
