@@ -8,6 +8,10 @@ import sys
 import subprocess
 
 
+def is_forest(value):
+    return value >= 30 and value != 200
+
+
 def process(hdf_file, target_table_name):
     conn_string = "dbname='fires' user='carolinux'"
     conn = psycopg2.connect(conn_string)
@@ -39,34 +43,43 @@ def process(hdf_file, target_table_name):
 
         scanline = band.ReadRaster(0, y, band.XSize, 1, band.XSize, 1, band.DataType)
         values = struct.unpack(band_types_map[band_type] * band.XSize, scanline)
-        for value in values:
+        streak = 0
+        for j, value in enumerate(values):
             i += 1
 
-            if (value >= 30 and value != 200):
+            if is_forest(value):
+                streak+=1
+
+            if (not is_forest(value) or j == len(values)-1) and streak>0:
                 insert_sql = " INSERT INTO {} (box, year, tree_cover) VALUES %s".format(target_table_name)
+                if not is_forest(value):
+                    startX = X - (streak * stepX)
+                    endX = X
+                else:
+                    startX = X - ((streak-1) * stepX)
+                    endX = X + stepX
                 ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
-                    X, Y,
-                    X + stepX, Y,
-                    X + stepX, Y + stepY,
-                    X, Y + stepY,
-                    X, Y)
+                    startX, Y,
+                    endX, Y,
+                    endX, Y + stepY,
+                    startX, Y + stepY,
+                    startX, Y)
+
                 tup = (ewkt, year, value)
                 tuples.append(tup)
-                if i % 100000 == 0:
-                    if i % 1000000:
-                        print('{} out of {} ({} %)'.format(i, num_pixels, 100.0 * i / num_pixels))
-                    execute_values(cur, insert_sql, tuples)
-                    conn.commit()
-                    inserted += len(tuples)
-                    tuples = []
+                streak = 0
+
+            if (i % 100000 == 0 or j == len(values)-1) and len(tuples)>0:
+                if i % 1000000 == 0:
+                    print('{} out of {} ({} %)'.format(i, num_pixels, 100.0 * i / num_pixels))
+                execute_values(cur, insert_sql, tuples)
+                conn.commit()
+                inserted += len(tuples)
+                tuples = []
 
             X += stepX
         X = topleftX
         Y += stepY
-    if len(tuples) > 0:  # still have some rows to insert
-        execute_values(cur, insert_sql, tuples)
-        inserted += len(tuples)
-        conn.commit()
     cur.close()
     conn.close()
     print("Found {} forest boxes".format(inserted))
