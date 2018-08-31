@@ -43,9 +43,8 @@ def process(hdf_file, target_table_name):
             i += 1
 
             if (value >= 30 and value != 200):
-                insert_sql = " INSERT INTO {} (box, year, tree_cover) VALUES %s"
+                insert_sql = " INSERT INTO {} (box, year, tree_cover) VALUES %s".format(target_table_name)
                 ewkt = "SRID=4326;POLYGON(({} {}, {} {}, {} {},{} {}, {} {}))".format(
-                    target_table_name,
                     X, Y,
                     X + stepX, Y,
                     X + stepX, Y + stepY,
