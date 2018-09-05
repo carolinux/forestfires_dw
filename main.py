@@ -28,9 +28,42 @@ CREATE INDEX {}_geom_idx
     conn.close()
 
 
+
+def download_all_the_files(downloads_file, target_directory):
+    if not os.path.exists(target_directory):
+        os.mkdir(target_directory)
+    with open(downloads_file, 'r') as f:
+        for i, line in enumerate(f):
+            url = line.strip()
+            target_file = os.path.join(target_directory, '{}.hdf'.format(i))
+            if os.path.exists(target_file) and os.path.getsize(target_file)>0:
+                continue
+            else:
+                command = "wget -O {} --retry-connrefused --tries=20 --user carolinux --password {} {}".format(target_file, pw, url)
+                os.system(command)
+
+
+
+def sanity_check(year, directory):
+    """check if we have all the files!"""
+    if year == '2017':
+        expected = 291
+    else:
+        expected = 582
+
+    hdf_files = [fn for fn in os.listdir(directory) if fn.endswith('hdf')]
+    assert len(hdf_files) == expected
+
+
 if __name__ == "__main__":
 
     year = sys.argv[1]
+    pw = sys.argv[2] # the password for NASA website
+    downloads_file = 'granules/{}.txt'.format(year)
+
+    download_all_the_files(downloads_file, directory_to_process)
+    sanity_check(year, directory_to_process)
+
     directory_to_process = year
     target_table_name = 'forestboxes{}'.format(year)
     i = 0
