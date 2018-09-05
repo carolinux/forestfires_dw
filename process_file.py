@@ -16,6 +16,7 @@ def process(hdf_file, target_table_name):
     conn_string = "dbname='fires' user='carolinux'"
     conn = psycopg2.connect(conn_string)
     cur = conn.cursor()
+
     dest_tif_file = hdf_file + '.tif'
     # change the projection to longitude and latitude
     cmd = 'gdalwarp -overwrite -t_srs EPSG:4326 -dstnodata -200 -of GTiff "HDF4_EOS:EOS_GRID:\"{}\":MOD44B_250m_GRID:Percent_Tree_Cover" {}'.format(
