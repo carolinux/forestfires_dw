@@ -3,6 +3,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import pandas as pd
 
+import os
 import struct
 import sys
 import subprocess
@@ -18,6 +19,9 @@ def process(hdf_file, target_table_name):
     cur = conn.cursor()
 
     dest_tif_file = hdf_file + '.tif'
+    if os.path.exists(dest_tif_file):
+        print("already processed {}, skipping".format(hdf_file))
+        return
     # change the projection to longitude and latitude
     cmd = 'gdalwarp -overwrite -t_srs EPSG:4326 -dstnodata -200 -of GTiff "HDF4_EOS:EOS_GRID:\"{}\":MOD44B_250m_GRID:Percent_Tree_Cover" {}'.format(
         hdf_file, dest_tif_file)
