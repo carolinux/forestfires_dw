@@ -11,7 +11,7 @@ def create_table_for_forest_boxes(target_table_name):
     conn_string = "dbname='fires' user='carolinux'"
     conn = psycopg2.connect(conn_string)
     cur = conn.cursor()
-    cur.execute("""CREATE TABLE {}
+    cur.execute("""CREATE TABLE IF NOT EXISTS {}
     (
       box geometry,
       tree_cover double precision,
@@ -19,7 +19,7 @@ def create_table_for_forest_boxes(target_table_name):
     );
  """.format(target_table_name))
     cur.execute("""
-CREATE INDEX {}_geom_idx
+CREATE INDEX IF NOT EXISTS {}_geom_idx
   ON {}
   USING gist
   (box);
@@ -51,7 +51,7 @@ def sanity_check(year, directory):
     else:
         expected = 582
 
-    hdf_files = [fn for fn in os.listdir(directory) if fn.endswith('hdf')]
+    hdf_files = [fn for fn in os.listdir(directory) if fn.endswith('hdf') and os.path.getsize(os.path.join(directory, fn))> 0]
     assert len(hdf_files) == expected
 
 
