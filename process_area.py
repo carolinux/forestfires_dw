@@ -69,5 +69,7 @@ def process(year):
 
 
 if __name__ == '__main__':
-    year = sys.argv[1]
-    process(year)
+    years = [str(y) for y in range(2003, 2019)]
+    for year in years:
+        print(year)
+        process(year)
