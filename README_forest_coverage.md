@@ -1,6 +1,6 @@
 # How to prepare country shapefiles for querying
 
-- Donwload from from: https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/
+- Donwload all country shapefiles from: https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/
 - Load into postgresql
 ```
 shp2pgsql -s 4326 countries/ne_50m_admin_0_countries.shp countries postgres > countries.sql
