@@ -46,7 +46,7 @@ def download_all_the_files(downloads_file, target_directory, username, password)
 
 def sanity_check(year, directory):
     """check if we have all the files!"""
-    if year == '2017':
+    if year == '2017' or year == '2018':
         expected = 291
     else:
         expected = 582
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             hdf_file = os.path.join(directory_to_process, file)
             i += 1
             print("processing file {}".format(i))
-            process_file.process(hdf_file, target_table_name)
+            process_file.process(hdf_file, target_table_name, year)
 
     print("Converted all hdfs files into latlons")
 

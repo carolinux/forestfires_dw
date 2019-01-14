@@ -13,7 +13,7 @@ def is_forest(value):
     return value >= 30 and value != 200
 
 
-def process(hdf_file, target_table_name):
+def process(hdf_file, target_table_name, year):
     conn_string = "dbname='fires' user='carolinux'"
     conn = psycopg2.connect(conn_string)
     cur = conn.cursor()
@@ -26,7 +26,6 @@ def process(hdf_file, target_table_name):
     cmd = 'gdalwarp -overwrite -t_srs EPSG:4326 -dstnodata -200 -of GTiff "HDF4_EOS:EOS_GRID:\"{}\":MOD44B_250m_GRID:Percent_Tree_Cover" {}'.format(
         hdf_file, dest_tif_file)
     subprocess.call(cmd, shell=True)
-    year = 2017  # FIXME
     # extract box coordinates for every 250x250m tree covered box
     dataset = gdal.Open(dest_tif_file)
     geotransform = dataset.GetGeoTransform()
